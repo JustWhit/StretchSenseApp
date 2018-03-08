@@ -13,6 +13,9 @@
 		49A3FECB20502CFE000CBE08 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 49A3FEC920502CFE000CBE08 /* Main.storyboard */; };
 		49A3FED720502CFE000CBE08 /* StretchSenseAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A3FED620502CFE000CBE08 /* StretchSenseAppTests.swift */; };
 		49A3FEE220502CFE000CBE08 /* StretchSenseAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A3FEE120502CFE000CBE08 /* StretchSenseAppUITests.swift */; };
+		49A3FEF120502E9A000CBE08 /* DataLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A3FEEF20502E9A000CBE08 /* DataLogger.swift */; };
+		49A3FEF220502E9A000CBE08 /* BluetoothWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A3FEF020502E9A000CBE08 /* BluetoothWorker.swift */; };
+		49A3FEF4205055EE000CBE08 /* GroundTruthLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A3FEF3205055EE000CBE08 /* GroundTruthLogger.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +49,9 @@
 		49A3FEDD20502CFE000CBE08 /* StretchSenseAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StretchSenseAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		49A3FEE120502CFE000CBE08 /* StretchSenseAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchSenseAppUITests.swift; sourceTree = "<group>"; };
 		49A3FEE320502CFE000CBE08 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		49A3FEEF20502E9A000CBE08 /* DataLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataLogger.swift; sourceTree = "<group>"; };
+		49A3FEF020502E9A000CBE08 /* BluetoothWorker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothWorker.swift; sourceTree = "<group>"; };
+		49A3FEF3205055EE000CBE08 /* GroundTruthLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroundTruthLogger.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,12 +102,15 @@
 		49A3FEC220502CFE000CBE08 /* StretchSenseApp */ = {
 			isa = PBXGroup;
 			children = (
+				49A3FEF020502E9A000CBE08 /* BluetoothWorker.swift */,
+				49A3FEEF20502E9A000CBE08 /* DataLogger.swift */,
 				49A3FEC320502CFE000CBE08 /* AppDelegate.swift */,
 				49A3FEC520502CFE000CBE08 /* ViewController.swift */,
 				49A3FEC720502CFE000CBE08 /* Assets.xcassets */,
 				49A3FEC920502CFE000CBE08 /* Main.storyboard */,
 				49A3FECC20502CFE000CBE08 /* Info.plist */,
 				49A3FECD20502CFE000CBE08 /* StretchSenseApp.entitlements */,
+				49A3FEF3205055EE000CBE08 /* GroundTruthLogger.swift */,
 			);
 			path = StretchSenseApp;
 			sourceTree = "<group>";
@@ -193,6 +202,11 @@
 					49A3FEBF20502CFE000CBE08 = {
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 0;
+							};
+						};
 					};
 					49A3FED120502CFE000CBE08 = {
 						CreatedOnToolsVersion = 9.2;
@@ -257,7 +271,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				49A3FEF220502E9A000CBE08 /* BluetoothWorker.swift in Sources */,
 				49A3FEC620502CFE000CBE08 /* ViewController.swift in Sources */,
+				49A3FEF120502E9A000CBE08 /* DataLogger.swift in Sources */,
+				49A3FEF4205055EE000CBE08 /* GroundTruthLogger.swift in Sources */,
 				49A3FEC420502CFE000CBE08 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -415,7 +432,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = StretchSenseApp/StretchSenseApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 9UYNGK5T3A;
@@ -431,7 +447,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = StretchSenseApp/StretchSenseApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 9UYNGK5T3A;
