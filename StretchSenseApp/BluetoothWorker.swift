@@ -6,12 +6,21 @@ import CoreBluetooth;
 class BluetoothWorker: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     
     private var dataUUIDgen2 = CBUUID(string: "00001502-7374-7265-7563-6873656e7365")
+    let heartRateMeasurementCBUUID = CBUUID(string: "2A37");
+    let bodysensorLocationCBUUID = CBUUID(string: "2A38");
     
     var manager = CBCentralManager();
     var myPherif: CBPeripheral?;
+    var myHeart: CBPeripheral?;
+    var heartfound = false;
+    var pheriffound = false;
+    var heartRate = 0;
     
     let queue = DispatchQueue(label: "com.my.queue");
     let formatter = DateFormatter();
+    
+    let capacitor = "StretchSense";
+    let Polar = "Polar H10 25E71E23";
     
     var totalSample : Int = 0;
     var logger : DataLogger;
@@ -40,35 +49,65 @@ class BluetoothWorker: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        if (central.state == .poweredOn) {
-            print("### bluetooth is enabled, starting scan");
-            nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"### bluetooth is enabled, starting scan"])
+        switch central.state{
             
-            manager.scanForPeripherals(withServices: nil, options: nil);
-        } else {
+        case .unknown:
+            print("##### central state is UNKNOWN");
+        case .resetting:
+            print("##### central state is RESETTING");
+        case .unsupported:
+            print("##### central state is UNSUPPORTED");
+        case .unauthorized:
+            print("##### central state is UNAUTHORIZED");
+        case .poweredOff:
             print("##### bluetooth is disabled");
             nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"##### bluetooth is disabled"])
             manager.stopScan();
+        case .poweredOn:
+            print("### bluetooth is enabled, starting scan");
+            nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"### bluetooth is enabled, starting scan"])
+            
+            manager.scanForPeripherals(withServices: nil);
         }
-    
+        
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        if (peripheral.name != nil && peripheral.name! == "StretchSense") {
+        print(peripheral)
+        if (peripheral.name != nil && peripheral.name! == capacitor) {
             print("## stretchsense found, attaching and searching for details");
             nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"## stretchsense found, attaching and searching for details"])
-            manager.stopScan();
+            
             myPherif = peripheral;
-            self.manager.connect(peripheral, options: nil);
+            myPherif?.delegate = self;
+            self.manager.connect(myPherif!);
             peripheral.discoverServices(nil);
         }
+        if (peripheral.name != nil && peripheral.name! == Polar){
+            print("## Polar Heart Sensor found, attaching and searching for details");
+            nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"## Polar Heart Sensor found, attaching and searching for details"])
+            
+            myHeart = peripheral;
+            myHeart?.delegate = self;
+            self.manager.connect(myHeart!);
+            peripheral.discoverServices(nil);
+        }
+        
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print("### attached to stretchsense, looking for its services");
-        nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"### attached to stretchsense, looking for its services"])
-        manager.stopScan();
-        peripheral.delegate = self;
+        print("### attached to ",peripheral.name!, ", looking for its services");
+        nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message": String("### attached to " + peripheral.name! + ", looking for its services")])
+        if(peripheral.name! == capacitor && pheriffound == false){
+            pheriffound = true;
+        }
+        if(peripheral.name! == Polar && heartfound == false){
+            heartfound = true;
+        }
+        if(pheriffound && heartfound){
+            manager.stopScan();
+        }
+        //peripheral.delegate = self;
         peripheral.discoverServices(nil);
         
     }
@@ -76,10 +115,12 @@ class BluetoothWorker: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         print("## found services in stretchsense, looking for its characteristics");
         nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"## found services in stretchsense, looking for its characteristics"])
-        for service in peripheral.services! {
+        guard let services = peripheral.services else {return}
+        
+        for service in services {
             let foundService = service as CBService;
             peripheral.discoverCharacteristics(nil, for: foundService);
-            print("## services");
+            print(service);
         }
         
         print("## Logging Begins");
@@ -91,36 +132,64 @@ class BluetoothWorker: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        print("## characteristics found");
         
-        for characteristic in service.characteristics! {
+        guard let characteristics = service.characteristics else{return}
+        
+        for characteristic in characteristics {
+            print(characteristic);
             let foundCharacteristic = characteristic as CBCharacteristic;
             let foundCharacteristicStrng = foundCharacteristic.uuid.uuidString;
             if ( foundCharacteristicStrng ==  dataUUIDgen2.uuidString ) {
                 peripheral.setNotifyValue(true, for: foundCharacteristic);
-                print("## expected characteristic found");
+                print("## capacitance characteristic found");
                 
+            }
+            if(foundCharacteristicStrng == heartRateMeasurementCBUUID.uuidString){
+                peripheral.setNotifyValue(true, for: foundCharacteristic);
+                print("## heartrate characteristic found");
             }
         }
         
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        let value = characteristic.value!;
-        let valueIntSense:Int! = Int(value.hexadecimalString()!, radix: 16)!;
-        let valueGen2 = CGFloat(convertRawDataToCapacitance(valueIntSense));
-        
-        totalSample += 1;
-        let toWrite = "\(valueGen2)," + String(format:"%f", (NSDate.timeIntervalSinceReferenceDate));
-        
-        DispatchQueue.global().async {
-            self.logger.writeStretchSenseData(stretchSenseEntry: toWrite);
+        switch characteristic.uuid{
+        case dataUUIDgen2:
+                if(heartRate == 0){
+                    print("## WAITING FOR HEART RATE");
+                    nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"WAITING FOR HEART RATE"])
+                    return;
+                }
+                let value = characteristic.value!;
+                let valueIntSense:Int! = Int(value.hexadecimalString()!, radix: 16)!;
+                let valueGen2 = CGFloat(convertRawDataToCapacitance(valueIntSense));
+            
+                totalSample += 1;
+                let toWrite = "\(heartRate),\(valueGen2)," + String(format:"%f", (NSDate.timeIntervalSinceReferenceDate));
+            
+                DispatchQueue.global().async {
+                    self.logger.writeStretchSenseData(stretchSenseEntry: toWrite);
+                }
+            
+        case heartRateMeasurementCBUUID:
+            heartRate = HeartRateHelper(from: characteristic)
+            nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message": "Heart Rate: \(heartRate)"])
+            
+        default:
+            return;
         }
-
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        print("## Peripheral " + peripheral.name! + " disconnected");
         nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"EXIT WITH ERROR?"])
+        if(peripheral.name! == Polar){
+            heartfound = false;
+        }
+        if(peripheral.name! == capacitor){
+            pheriffound = false;
+        }
+        
     }
     
     func convertRawDataToCapacitance(_ rawDataInt: Int) -> Float{
@@ -133,6 +202,20 @@ class BluetoothWorker: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
              manager.cancelPeripheralConnection(myPherif!);
         }
         
+    }
+    
+    private func HeartRateHelper( from characteristic: CBCharacteristic)->Int{
+        guard let characteristicData = characteristic.value else{return -1}
+        let byteArray = [UInt8](characteristicData)
+        
+        let firstBitValue = byteArray[0] & 0x01
+        if firstBitValue == 0 {
+            //Heart Rate Value Format is in the 2nd byte
+            return Int(byteArray[1])
+        }else{
+            //heart rate vale is in the 2nd and 3rd bytes
+            return (Int(byteArray[1]) << 8) + Int(byteArray[2])
+        }
     }
     
     

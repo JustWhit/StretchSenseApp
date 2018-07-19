@@ -36,7 +36,7 @@ class DataLogger: NSObject {
             
             fileManager.createFile(atPath: fileNameUrl!.path, contents: nil, attributes: nil);
             file = try FileHandle(forWritingTo: fileNameUrl!);
-            file.write("HR,pF,Time\n".data(using: String.Encoding.utf8, allowLossyConversion: false)!);
+            file.write("pF,time\n".data(using: String.Encoding.utf8, allowLossyConversion: false)!);
         } catch {
             print(error.localizedDescription);
             nc.post(name:Notification.Name(rawValue:"SSInfoUpdate"), object:nil, userInfo: ["message":"ERROR:: unable to write cap data"])
