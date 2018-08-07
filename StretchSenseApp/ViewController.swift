@@ -7,12 +7,14 @@
 //
 
 import Cocoa
+import AVFoundation
 
 
 class ViewController: NSViewController {
     private var logging = false;
     private var discarding = false;
     var worker = BluetoothWorker();
+    var audioRecorder = AVAudioRecorder();
     
     
     let defaultCenter = NotificationCenter.default;
